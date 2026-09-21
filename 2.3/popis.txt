@@ -1,0 +1,2 @@
+zadání: použít zběrnicový input output
+výsledek: ultrasonic sensor vzdáleností ovládá servo

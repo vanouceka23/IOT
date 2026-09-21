@@ -1,0 +1,9 @@
+Ultrasonic:
+VCC → 5V or 3.3V (check your module)
+GND → GND
+TRIG → GPIO 18
+ECHO → GPIO 19
+Servo:
+signal → GPIO 15
+VCC → 5V
+GND → GND
