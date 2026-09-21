@@ -1,0 +1,2 @@
+zadání: analaog input output
+výsledek: potenciometr který mění jas ledky ale mnohem složitěji přes rasbery

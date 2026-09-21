@@ -1,0 +1,5 @@
+Potentiometer jedna strana na GPIO 26
+Potentiometer střed na 3.3V
+Potentiometer druhá strana na GND
+LED + přes resistor na GPIO 14
+LED − na GND
