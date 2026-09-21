@@ -1,0 +1,2 @@
+zadání: digitální input output
+výsledek: když se zmáčkne tlačítko ledka začne blikat

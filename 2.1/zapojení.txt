@@ -1,0 +1,4 @@
+Button one side to GND
+Button other side to GPIO 15
+LED anode (+) to GPIO 14 through resistor
+LED cathode (-) to GND
