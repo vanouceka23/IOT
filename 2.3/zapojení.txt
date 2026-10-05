@@ -3,3 +3,10 @@ VCC na 3.3 V
 GND na GND
 SDA na GPIO 0
 SCL na GPIO 1
+
+MAX7219 (maticovy displej 8x8):
+VCC na  3.3 V
+GND na GND
+DIN na GPIO 19
+CLK na GPIO 18
+CS na GPIO 17

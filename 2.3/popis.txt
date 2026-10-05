@@ -1,2 +1,2 @@
-zadání: použít zběrnicový input output
-výsledek: zobrazuju něco na lcd displayi
+zadání: použít zběrnicový input output (jenom output protože sensor problém)
+výsledek: zobrazuju něco na lcd display a maticový display

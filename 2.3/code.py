@@ -1,4 +1,4 @@
-from machine import I2C, Pin
+from machine import I2C, Pin, SPI
 import time
 
 
@@ -6,6 +6,11 @@ import time
 I2C_ID = 0
 I2C_SDA = 0
 I2C_SCL = 1
+
+SPI_ID = 0
+SPI_SCK = 18
+SPI_MOSI = 19
+MATRIX_CS = 17
 
 
 class I2cLcd:
@@ -63,6 +68,31 @@ class I2cLcd:
 			self.write_char(ord(character))
 
 
+class Max7219Matrix:
+	def __init__(self, spi, chip_select):
+		self.spi = spi
+		self.chip_select = chip_select
+		self.chip_select.value(1)
+
+		self._write_register(0x0F, 0x00)  # display test off
+		self._write_register(0x0C, 0x00)  # shutdown while configuring
+		self._write_register(0x0B, 0x07)  # scan all 8 rows
+		self._write_register(0x09, 0x00)  # no BCD decoding
+		self._write_register(0x0A, 0x03)  # brightness (0-15)
+		for row in range(1, 9):
+			self._write_register(row, 0x00)
+		self._write_register(0x0C, 0x01)  # normal operation
+
+	def _write_register(self, address, value):
+		self.chip_select.value(0)
+		self.spi.write(bytes((address, value)))
+		self.chip_select.value(1)
+
+	def show(self, rows):
+		for row, value in enumerate(rows, start=1):
+			self._write_register(row, value)
+
+
 i2c = I2C(I2C_ID, sda=Pin(I2C_SDA), scl=Pin(I2C_SCL), freq=100000)
 addresses = i2c.scan()
 if not addresses:
@@ -78,4 +108,24 @@ lcd = I2cLcd(i2c, lcd_address)
 lcd.set_cursor(0, 0)
 lcd.write("Hello World!")
 lcd.set_cursor(0, 1)
-lcd.write("LCD works")
+lcd.write("MAX7219 ready")
+
+spi = SPI(
+	SPI_ID,
+	baudrate=1000000,
+	polarity=0,
+	phase=0,
+	sck=Pin(SPI_SCK),
+	mosi=Pin(SPI_MOSI),
+)
+matrix = Max7219Matrix(spi, Pin(MATRIX_CS, Pin.OUT))
+matrix.show((
+	0b00111100,
+	0b01000010,
+	0b10100101,
+	0b10000001,
+	0b10100101,
+	0b10011001,
+	0b01000010,
+	0b00111100,
+))
