@@ -1,0 +1,10 @@
+rasbery 1 
+LED na GPIO 14
+LED na GND
+
+rb1 GND na rb2 GND 2
+rb1 GPIO 1 na rb2 GPIO 0
+
+rasbery 2
+BUTTON na GPIO 13
+BUTTON na GND

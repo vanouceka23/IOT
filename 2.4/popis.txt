@@ -1,0 +1,2 @@
+zadání: komunikace mezi dvěma raspbery pi pico w za ponoci zběrnice
+výsledek: tlačítko na jednom rasbery ovládá led na druhém rasbery
