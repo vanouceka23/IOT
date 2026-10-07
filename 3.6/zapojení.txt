@@ -1,0 +1,3 @@
+tlačítko na GPIO 21 a GND
+LED + na GPIO 17 přes resistor
+LED - na GND

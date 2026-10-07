@@ -1,7 +1,10 @@
 Pico W 1 (LED)
-LED na GPIO 14  
-LED na GND
+- GPIO 14 -> rezistor 220-1000 ohmu -> anoda LED (delsi nozicka)
+- katoda LED (kratsi nozicka) -> GND
 
 Pico W 2 (tlacitko)
-tlacitk0 na GPIO 13
-tlacitko na GND
+- jedna strana tlacitka -> GPIO 13
+- druha strana tlacitka -> GND
+- program pouziva interni pull-up rezistor, externi neni potreba
+
+Mezi deskami nepropojuj GPIO ani GND. Komunikace probiha bezdratove pres Bluetooth Low Energy (BLE).
