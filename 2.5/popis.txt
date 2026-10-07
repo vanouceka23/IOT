@@ -1,0 +1,4 @@
+Zadani: bezdratova komunikace mezi dvema Raspberry Pi Pico W pomoci Bluetooth Low Energy (BLE).
+Vysledek: stisknuti tlacitka na jednom Pico W rozsviti LED pripojenou k druhemu Pico W; po uvolneni tlacitka LED zhasne.
+
+Na obou deskach musi byt nahrany aktualni MicroPython firmware pro Raspberry Pi Pico W s podporou BLE. Soubor code.py nahraj na obe desky. Na desce s LED nastav DEVICE_ROLE = "led"; na desce s tlacitkem nastav DEVICE_ROLE = "button".

@@ -1,0 +1,7 @@
+Pico W 1 (LED)
+LED na GPIO 14  
+LED na GND
+
+Pico W 2 (tlacitko)
+tlacitk0 na GPIO 13
+tlacitko na GND
