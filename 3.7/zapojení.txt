@@ -1,0 +1,18 @@
+Analogové ovládání LED: Raspberry Pi Pico + Raspberry Pi
+
+Potenciometr (na Pico):
+- jeden krajní vývod -> Pico 3V3(OUT), fyzický pin 36
+- druhý krajní vývod -> Pico GND, fyzický pin 3
+- prostřední vývod (jezdec) -> Pico GP26 / ADC0, fyzický pin 31
+
+UART z Pico do Raspberry Pi (Pico může být napájené přes USB):
+- Pico GP0 / UART0 TX, fyzický pin 1 -> Raspberry Pi GPIO15 / RXD,
+  fyzický pin 10
+- Pico GND, fyzický pin 3 -> Raspberry Pi GND, například fyzický pin 6
+
+LED (na Raspberry Pi):
+- GPIO17, fyzický pin 11 -> rezistor -> anoda LED
+- katoda LED -> GND, například fyzický pin 9
+
+Pico a Raspberry Pi propojuj pouze signály UART TX/RX a společnou zem.
+Obě desky používají 3,3V logiku. Nepřipojuj 5V na ADC ani GPIO.

@@ -1,0 +1,27 @@
+Analogové ovládání matice 8x8 MAX7219: Raspberry Pi Pico + Raspberry Pi
+
+Potenciometr (na Pico):
+- jeden krajní vývod -> Pico 3V3(OUT), fyzický pin 36
+- druhý krajní vývod -> Pico GND, fyzický pin 3
+- prostřední vývod (jezdec) -> Pico GP26 / ADC0, fyzický pin 31
+
+UART z Pico do Raspberry Pi (Pico může být napájené přes USB):
+- Pico GP0 / UART0 TX, fyzický pin 1 -> Raspberry Pi GPIO15 / RXD,
+  fyzický pin 10
+- Pico GND, fyzický pin 3 -> Raspberry Pi GND, například fyzický pin 6
+
+Matice MAX7219 (na velkém Raspberry Pi, SPI0):
+- VCC -> 5V, fyzický pin 2
+- GND -> GND, fyzický pin 6
+- DIN -> GPIO10 / MOSI, fyzický pin 19
+- CLK -> GPIO11 / SCLK, fyzický pin 23
+- CS / LOAD -> GPIO8 / CE0, fyzický pin 24
+
+Vodiče DIN, CLK a CS jsou 3,3V GPIO signály, zatímco modul MAX7219 je
+napájený 5V. Pro spolehlivé a elektricky správné zapojení použij mezi
+Raspberry Pi a vstupy modulu převodník logických úrovní 3,3V -> 5V
+(například 74AHCT125 nebo 74HCT245). Zem převodníku musí být společná
+s Raspberry Pi i modulem. Nepřipojuj 5V na žádný GPIO pin.
+
+Pico a Raspberry Pi propojuj pouze signály UART TX/RX a společnou zem.
+Obě desky používají 3,3V logiku. Nepřipojuj 5V na ADC ani GPIO.

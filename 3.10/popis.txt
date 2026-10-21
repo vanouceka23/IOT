@@ -1,0 +1,31 @@
+Zadání: tlačítko na Raspberry Pi Pico W přepíná matici 8x8 MAX7219 mezi
+zcela zhasnutým a zcela rozsvíceným stavem.
+
+Pico W posílá stav tlačítka přes Bluetooth Low Energy (BLE). Raspberry Pi
+přijímá stav a ovládá MAX7219 připojený přes SPI. Dashboard zobrazuje stav
+Bluetooth spojení a aktuální stav matice. Matice se kromě tlačítka na Pico W
+dá rozsvítit nebo zhasnout také tlačítky v dashboardu.
+
+Nastavení Raspberry Pi:
+1. V `sudo raspi-config` povol SPI přes Interface Options > SPI.
+2. Zapni Bluetooth službu a nainstaluj potřebné balíčky:
+   `sudo systemctl enable --now bluetooth`
+   `sudo apt install python3-bleak python3-spidev`.
+3. Připoj tlačítko a matici podle `zapojení.txt`.
+
+Nastavení Pico W:
+1. Použij Raspberry Pi Pico W (běžné Pico Bluetooth nemá) a nahraj
+   MicroPython firmware určený pro Pico W.
+2. Otevři `pico.py` v Thonny a ulož jej na Pico W jako `main.py`.
+
+Spuštění:
+1. Ulož `code.py` a `dashboard.html` do stejné složky na Raspberry Pi.
+2. Spusť na Raspberry Pi `python3 code.py`. Program bude hledat Bluetooth
+   zařízení s názvem `IOT-PicoW`.
+3. Zapni Pico W. Stisk tlačítka přepíná celou matici mezi zhasnutým a
+   rozsvíceným stavem.
+4. V prohlížeči na zařízení ve stejné síti otevři
+   `http://<IP-Raspberry-Pi>:8000`.
+
+Dashboard zpřístupňuje stav zařízením v místní síti; nevystavuj port 8000
+přímo do internetu.

@@ -1,0 +1,30 @@
+Zadání: analogový vstup ovládá počet rozsvícených pixelů matice 8x8 MAX7219.
+
+Potenciometr připojený k Raspberry Pi Pico je čten jako analogová hodnota
+přes ADC0 (GP26). Pico posílá hodnotu Raspberry Pi přes UART. Raspberry Pi
+ji mapuje na 0 až 64 rozsvícených pixelů matice MAX7219 připojené přes SPI.
+Pixely se rozsvěcují po řádcích zleva doprava. Dashboard zobrazuje hodnotu
+ADC, počet rozsvícených pixelů a stav spojení s Pico. V dashboardu lze
+přepnout mezi automatickým řízením potenciometrem a ručním nastavením počtu
+rozsvícených pixelů.
+
+Nastavení Raspberry Pi:
+1. V `sudo raspi-config` povol UART přes Interface Options > Serial Port.
+   Sériovou konzoli přes UART vypni a hardwarový sériový port povol.
+2. V `sudo raspi-config` povol také SPI přes Interface Options > SPI.
+3. Nainstaluj potřebné balíčky příkazem
+   `sudo apt install python3-serial python3-spidev`.
+4. Připoj vodiče podle `zapojení.txt`.
+
+Nastavení Raspberry Pi Pico:
+1. Nahraj MicroPython na Pico.
+2. Otevři `pico.py` v Thonny a ulož jej na Pico jako `main.py`.
+
+Spuštění:
+1. Ulož `code.py` a `dashboard.html` do stejné složky na Raspberry Pi.
+2. Spusť `python3 code.py`.
+3. V prohlížeči na zařízení ve stejné síti otevři
+   `http://<IP-Raspberry-Pi>:8000`.
+
+Dashboard zpřístupňuje stav zařízením v místní síti; nevystavuj port 8000
+přímo do internetu.

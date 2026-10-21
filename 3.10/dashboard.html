@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tlačítko a matice | Raspberry Pi</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #101722;
+      color: #f1f5f9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: radial-gradient(ellipse at top, #1c3045, #101722 65%);
+    }
+
+    main {
+      width: min(100%, 460px);
+      padding: 32px;
+      border: 1px solid #29384a;
+      border-radius: 24px;
+      background: #172230;
+      box-shadow: 0 24px 70px #0005;
+      text-align: center;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 0; font-size: 1.8rem; }
+
+    .connection {
+      margin: 20px 0;
+      color: #fca5a5;
+      font-weight: 700;
+    }
+
+    .connection.connected { color: #86efac; }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      width: min(100%, 300px);
+      margin: 24px auto 12px;
+    }
+
+    .pixel {
+      aspect-ratio: 1;
+      border: 1px solid #41516a;
+      border-radius: 4px;
+      background: #263346;
+    }
+
+    .pixel.on {
+      border-color: #f9d978;
+      background: #ffd666;
+      box-shadow: 0 0 10px #ffcf4a99;
+    }
+
+    #matrix-state { margin: 0; font-size: 1.1rem; font-weight: 700; }
+    .controls { display: flex; gap: 12px; margin-top: 24px; }
+    button {
+      flex: 1;
+      min-height: 48px;
+      border: 0;
+      border-radius: 12px;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button:focus-visible { outline: 3px solid #93c5fd; outline-offset: 3px; }
+    button:disabled { cursor: wait; opacity: 0.65; }
+    #turn-on { background: #72e0a2; color: #10251a; }
+    #turn-off { background: #334155; color: #f1f5f9; }
+    #error { min-height: 1.4em; margin: 16px 0 0; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Pico W Bluetooth · MAX7219 přes SPI</p>
+    <h1>Ovládání matice tlačítkem</h1>
+    <p id="connection" class="connection" aria-live="polite">Čekám na Pico W…</p>
+    <div id="matrix" class="matrix" role="img" aria-label="Čekám na Pico W"></div>
+    <p id="matrix-state">Čekám na data…</p>
+    <div class="controls">
+      <button id="turn-on" type="button" disabled>Rozsvítit matici</button>
+      <button id="turn-off" type="button" disabled>Zhasnout matici</button>
+    </div>
+    <p id="error" role="alert"></p>
+  </main>
+
+  <script>
+    const connection = document.querySelector("#connection");
+    const matrix = document.querySelector("#matrix");
+    const matrixState = document.querySelector("#matrix-state");
+    const error = document.querySelector("#error");
+    const controls = [...document.querySelectorAll("button")];
+    const pixels = [];
+    let isConnected = false;
+    let commandPending = false;
+    let commandError = "";
+
+    function updateControls() {
+      controls.forEach((control) => {
+        control.disabled = !isConnected || commandPending;
+      });
+    }
+
+    async function setDisplay(isOn) {
+      commandPending = true;
+      updateControls();
+      commandError = "";
+      error.textContent = "";
+      try {
+        const response = await fetch("/api/control", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ on: isOn })
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `Server odpověděl ${response.status}.`);
+      } catch (err) {
+        commandError = `Matici se nepodařilo ovládat: ${err.message}`;
+        error.textContent = commandError;
+      } finally {
+        commandPending = false;
+        updateControls();
+      }
+    }
+
+    for (let index = 0; index < 64; index += 1) {
+      const pixel = document.createElement("span");
+      pixel.className = "pixel";
+      matrix.append(pixel);
+      pixels.push(pixel);
+    }
+
+    async function updateStatus() {
+      try {
+        const response = await fetch("/api/status", { cache: "no-store" });
+        if (!response.ok) throw new Error(`Server odpověděl ${response.status}.`);
+        const status = await response.json();
+
+        isConnected = status.connected;
+        updateControls();
+        connection.textContent = status.connected
+          ? "Pico W připojeno přes Bluetooth"
+          : "Pico W není připojeno";
+        connection.classList.toggle("connected", status.connected);
+        pixels.forEach((pixel) => {
+          pixel.classList.toggle("on", status.connected && status.display_on);
+        });
+        matrix.setAttribute("aria-label", status.connected
+          ? status.display_on ? "Matice svítí" : "Matice je zhasnutá"
+          : "Čekám na Pico W");
+        matrixState.textContent = status.connected
+          ? status.display_on ? "Matice svítí" : "Matice je zhasnutá"
+          : "Čekám na Bluetooth spojení…";
+        error.textContent = commandError;
+      } catch (err) {
+        isConnected = false;
+        updateControls();
+        connection.textContent = "Dashboard není dostupný";
+        connection.classList.remove("connected");
+        pixels.forEach((pixel) => pixel.classList.remove("on"));
+        matrix.setAttribute("aria-label", "Stav matice není dostupný");
+        matrixState.textContent = "Stav není dostupný";
+        error.textContent = commandError || `Stav se nepodařilo načíst: ${err.message}`;
+      } finally {
+        window.setTimeout(updateStatus, 250);
+      }
+    }
+
+    document.querySelector("#turn-on").addEventListener("click", () => setDisplay(true));
+    document.querySelector("#turn-off").addEventListener("click", () => setDisplay(false));
+    updateStatus();
+  </script>
+</body>
+</html>

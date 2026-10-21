@@ -1,0 +1,22 @@
+Tlačítko Pico W ovládá matici 8x8 MAX7219 přes Bluetooth Low Energy.
+
+Tlačítko (na Pico W):
+- jeden kontakt -> Pico GP15, fyzický pin 20
+- druhý kontakt -> Pico GND, například fyzický pin 18
+- tlačítko je aktivní při stisku (GP15 se spojí se zemí); interní pull-up
+  odpor je zapnutý, externí odpor není potřeba.
+
+Pico W napájej přes USB. Mezi Pico W a velkým Raspberry Pi nejsou potřeba
+signálové vodiče; komunikace probíhá bezdrátově přes Bluetooth Low Energy.
+
+Matice MAX7219 (na velkém Raspberry Pi, SPI0):
+- VCC -> 5V, fyzický pin 2
+- GND -> GND, fyzický pin 6
+- DIN -> GPIO10 / MOSI, fyzický pin 19
+- CLK -> GPIO11 / SCLK, fyzický pin 23
+- CS / LOAD -> GPIO8 / CE0, fyzický pin 24
+
+Modul MAX7219 se napájí 5V. Pro spolehlivé a elektricky správné zapojení
+vlož mezi Raspberry Pi a vstupy DIN, CLK, CS převodník logických úrovní
+3,3V -> 5V (například 74AHCT125 nebo 74HCT245). Zem převodníku musí být
+společná s Raspberry Pi i modulem. Nikdy nepřipojuj 5V na GPIO.

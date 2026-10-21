@@ -1,0 +1,28 @@
+Zadání: analogový vstup a výstup se zobrazením na webovém dashboardu.
+
+Potenciometr připojený k Raspberry Pi Pico je čten jako analogová hodnota
+přes ADC0 (GP26). Pico posílá hodnotu Raspberry Pi přes UART. Raspberry Pi
+ji převádí na PWM signál na GPIO17, který plynule mění jas LED. Dashboard
+zobrazuje surovou hodnotu ADC, jas LED a stav spojení s Pico. V dashboardu
+lze přepnout mezi automatickým řízením potenciometrem a ručním nastavením
+jasu.
+
+Nastavení Raspberry Pi:
+1. V `sudo raspi-config` povol UART přes Interface Options > Serial Port.
+   Sériovou konzoli přes UART vypni a hardwarový sériový port povol.
+2. Nainstaluj potřebné balíčky příkazem
+   `sudo apt install python3-gpiozero python3-serial`.
+3. Připoj vodiče podle `zapojení.txt`.
+
+Nastavení Raspberry Pi Pico:
+1. Nahraj MicroPython na Pico.
+2. Otevři `pico.py` v Thonny a ulož jej na Pico jako `main.py`.
+
+Spuštění:
+1. Ulož `code.py` a `dashboard.html` do stejné složky na Raspberry Pi.
+2. Spusť `python3 code.py`.
+3. V prohlížeči na zařízení ve stejné síti otevři
+   `http://<IP-Raspberry-Pi>:8000`.
+
+Dashboard zpřístupňuje stav zařízením v místní síti; nevystavuj port 8000
+přímo do internetu.

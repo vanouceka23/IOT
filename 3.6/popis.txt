@@ -1,2 +1,13 @@
-zadání: digitální input output na rasbery pi
-výsledek: když se zmáčkne tlačítko ledka začne blikat
+zadání: digitální input/output a webový dashboard na Raspberry Pi
+výsledek: tlačítko na GPIO 27 rozbliká LED na GPIO 17. Webový dashboard
+zobrazuje stav LED a umožňuje ji zapnout nebo vypnout.
+
+Spuštění na Raspberry Pi:
+1. Ulož code.py a dashboard.html do stejné složky.
+2. Spusť `python3 code.py`.
+3. V prohlížeči na zařízení ve stejné síti otevři
+   `http://<IP-Raspberry-Pi>:8000`.
+
+LED připoj na GPIO 17 přes rezistor a GND, tlačítko na GPIO 27 a GND.
+Stav se obnovuje každých 250 ms. Dashboard zpřístupňuje stav zařízením v
+místní síti; nevystavuj port 8000 přímo do internetu.

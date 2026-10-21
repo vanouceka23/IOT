@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Analogové ovládání matice | Raspberry Pi</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+      background: #101722;
+      color: #f1f5f9;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: radial-gradient(ellipse at top, #1c3045, #101722 65%);
+    }
+
+    main {
+      width: min(100%, 460px);
+      padding: 32px;
+      border: 1px solid #29384a;
+      border-radius: 24px;
+      background: #172230;
+      box-shadow: 0 24px 70px #0005;
+    }
+
+    .eyebrow {
+      margin: 0 0 8px;
+      color: #94a3b8;
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+
+    h1 { margin: 0; font-size: 1.8rem; }
+
+    .connection {
+      margin: 20px 0;
+      color: #fca5a5;
+      font-weight: 700;
+    }
+
+    .connection.connected { color: #86efac; }
+    .reading { margin: 12px 0 6px; color: #cbd5e1; }
+    .value { font-size: 1.5rem; font-weight: 700; }
+
+    progress {
+      width: 100%;
+      height: 18px;
+      margin: 8px 0;
+      accent-color: #ffd666;
+    }
+
+    .matrix {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      gap: 6px;
+      width: min(100%, 300px);
+      margin: 24px auto 12px;
+    }
+
+    .pixel {
+      aspect-ratio: 1;
+      border: 1px solid #41516a;
+      border-radius: 4px;
+      background: #263346;
+      transition: background 100ms ease, box-shadow 100ms ease;
+    }
+
+    .pixel.on {
+      border-color: #f9d978;
+      background: #ffd666;
+      box-shadow: 0 0 10px #ffcf4a99;
+    }
+
+    #matrix-state { margin: 0; text-align: center; font-weight: 700; }
+    .controls { margin-top: 24px; }
+    .mode-controls { display: flex; gap: 12px; }
+    button {
+      flex: 1;
+      min-height: 44px;
+      border: 0;
+      border-radius: 12px;
+      background: #334155;
+      color: #f1f5f9;
+      font: inherit;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    button.active { background: #72e0a2; color: #10251a; }
+    button:focus-visible, input:focus-visible {
+      outline: 3px solid #93c5fd;
+      outline-offset: 3px;
+    }
+    button:disabled { cursor: wait; opacity: 0.65; }
+    .manual-control { margin-top: 20px; }
+    #mode-label { margin: 14px 0 0; text-align: center; font-weight: 700; }
+    #error { min-height: 1.4em; margin: 16px 0 0; color: #fca5a5; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Pico ADC0 · UART · MAX7219 přes SPI</p>
+    <h1>Analogové ovládání matice</h1>
+    <p id="connection" class="connection" aria-live="polite">Čekám na Pico…</p>
+    <p class="reading">Analogový vstup potenciometru</p>
+    <p id="adc-value" class="value">—</p>
+    <progress id="adc-progress" max="65535" value="0" aria-label="Hodnota analogového vstupu"></progress>
+    <p class="reading">Rozsvícené pixely: <span id="pixel-count">—</span></p>
+    <div id="matrix" class="matrix" role="img" aria-label="Čekám na Pico"></div>
+    <p id="matrix-state">Čekám na data…</p>
+    <section class="controls" aria-label="Ovládání matice">
+      <div class="mode-controls">
+        <button id="auto-mode" type="button">Potenciometr</button>
+        <button id="manual-mode" type="button">Ruční ovládání</button>
+      </div>
+      <div class="manual-control">
+        <label class="reading" for="manual-pixels">Ruční počet pixelů: <span id="manual-value">0 / 64</span></label>
+        <input id="manual-pixels" type="range" min="0" max="64" value="0">
+      </div>
+      <p id="mode-label" aria-live="polite">Režim: potenciometr</p>
+    </section>
+    <p id="error" role="alert"></p>
+  </main>
+
+  <script>
+    const connection = document.querySelector("#connection");
+    const adcValue = document.querySelector("#adc-value");
+    const adcProgress = document.querySelector("#adc-progress");
+    const pixelCount = document.querySelector("#pixel-count");
+    const matrix = document.querySelector("#matrix");
+    const matrixState = document.querySelector("#matrix-state");
+    const error = document.querySelector("#error");
+    const manualPixels = document.querySelector("#manual-pixels");
+    const manualValue = document.querySelector("#manual-value");
+    const modeLabel = document.querySelector("#mode-label");
+    const controls = [...document.querySelectorAll("button, input")];
+    const pixels = [];
+    let commandError = "";
+
+    function showMode(mode) {
+      const isManual = mode === "manual";
+      document.querySelector("#auto-mode").classList.toggle("active", !isManual);
+      document.querySelector("#manual-mode").classList.toggle("active", isManual);
+      modeLabel.textContent = `Režim: ${isManual ? "ruční ovládání" : "potenciometr"}`;
+    }
+
+    async function setControl(mode, value) {
+      controls.forEach((control) => { control.disabled = true; });
+      commandError = "";
+      error.textContent = "";
+      try {
+        const body = mode === "manual" ? { mode, pixels: Number(value) } : { mode };
+        const response = await fetch("/api/control", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body)
+        });
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || `Server odpověděl ${response.status}.`);
+        showMode(result.control_mode);
+      } catch (err) {
+        commandError = `Ovládání matice se nepodařilo změnit: ${err.message}`;
+        error.textContent = commandError;
+      } finally {
+        controls.forEach((control) => { control.disabled = false; });
+      }
+    }
+
+    for (let index = 0; index < 64; index += 1) {
+      const pixel = document.createElement("span");
+      pixel.className = "pixel";
+      matrix.append(pixel);
+      pixels.push(pixel);
+    }
+
+    async function updateStatus() {
+      try {
+        const response = await fetch("/api/status", { cache: "no-store" });
+        if (!response.ok) throw new Error(`Server odpověděl ${response.status}.`);
+        const status = await response.json();
+
+        connection.textContent = status.connected ? "Pico připojeno" : "Pico není připojeno";
+        connection.classList.toggle("connected", status.connected);
+        adcValue.textContent = status.connected ? `${status.adc_raw} / 65535` : "—";
+        adcProgress.value = status.connected ? status.adc_raw : 0;
+        pixelCount.textContent = `${status.pixels_lit} / 64`;
+        if (document.activeElement !== manualPixels) {
+          manualPixels.value = status.pixels_lit;
+          manualValue.textContent = `${status.pixels_lit} / 64`;
+        }
+        showMode(status.control_mode);
+        pixels.forEach((pixel, index) => {
+          pixel.classList.toggle("on", index < status.pixels_lit);
+        });
+        matrix.setAttribute("aria-label", `${status.pixels_lit} z 64 pixelů svítí`);
+        matrixState.textContent = status.control_mode === "manual" || status.connected
+          ? `Svítí ${status.pixels_lit} z 64 pixelů`
+          : "Čekám na data z Pico…";
+        error.textContent = commandError;
+      } catch (err) {
+        connection.textContent = "Dashboard není dostupný";
+        connection.classList.remove("connected");
+        adcValue.textContent = "—";
+        adcProgress.value = 0;
+        pixelCount.textContent = "—";
+        pixels.forEach((pixel) => pixel.classList.remove("on"));
+        matrix.setAttribute("aria-label", "Stav matice není dostupný");
+        matrixState.textContent = "Stav není dostupný";
+        error.textContent = commandError || `Stav se nepodařilo načíst: ${err.message}`;
+      } finally {
+        window.setTimeout(updateStatus, 250);
+      }
+    }
+
+    document.querySelector("#auto-mode").addEventListener("click", () => setControl("auto"));
+    document.querySelector("#manual-mode").addEventListener("click", () => {
+      setControl("manual", manualPixels.value);
+    });
+    manualPixels.addEventListener("input", () => {
+      manualValue.textContent = `${manualPixels.value} / 64`;
+    });
+    manualPixels.addEventListener("change", () => setControl("manual", manualPixels.value));
+    updateStatus();
+  </script>
+</body>
+</html>
