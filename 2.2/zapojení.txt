@@ -1,2 +1,1 @@
-LED + přes resistor na GPIO 14
-LED − na GND
+Led je připojena přes rezistor na pin GP15. Potenciometr je zapojeny na pin GP26.

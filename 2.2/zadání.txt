@@ -1,0 +1,6 @@
+Popis: Led se rozsvítí podle hodnoty na potenciometru.
+
+
+
+
+
