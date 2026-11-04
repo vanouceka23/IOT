@@ -1,0 +1,103 @@
+DOMÁCÍ METEOSTANICE
+Zapojení Raspberry Pi Pico W + TMP36 + DHT22
+1. Použité součástky
+Raspberry Pi 4B
+Raspberry Pi Pico W
+Teplotní senzor TMP36
+Teplotní a vlhkostní senzor DHT22 (4 piny)
+Rezistor 4,7 kΩ až 10 kΩ
+Propojovací vodiče
+Nepájivé kontaktní pole
+2. Zapojení senzoru TMP36
+
+Při pohledu na plochou stranu senzoru a nožičkami směrem dolů:
+
+Pin 1 – levý:
+
+Funkce: +Vs (napájení)
+Připojit na Pico W: 3V3
+
+Pin 2 – prostřední:
+
+Funkce: Vout (analogový výstup)
+Připojit na Pico W: GP26 (ADC0)
+
+Pin 3 – pravý:
+
+Funkce: GND (zem)
+Připojit na Pico W: GND
+
+Popis: TMP36 měří teplotu a převádí ji na analogové napětí. Pico W toto napětí načítá přes analogový vstup GP26.
+
+3. Zapojení senzoru DHT22
+
+Při pohledu na přední stranu senzoru (mřížka směrem k sobě, nožičky dolů):
+
+Pin 1 – levý:
+
+Funkce: VCC (napájení)
+Připojit na Pico W: 3V3
+
+Pin 2:
+
+Funkce: DATA (digitální komunikace)
+Připojit na Pico W: GP16
+
+Pin 3:
+
+Funkce: NC (nepoužívaný pin)
+Nezapojovat.
+
+Pin 4 – pravý:
+
+Funkce: GND (zem)
+Připojit na Pico W: GND
+
+Důležité: Mezi VCC a DATA připojit pull-up rezistor 4,7 kΩ až 10 kΩ. Pokud má senzor již rezistor na své destičce, další není potřeba.
+
+4. Souhrnná tabulka zapojení
+
+Raspberry Pi Pico W:
+
+3V3 -> TMP36 +Vs 3V3 -> DHT22 VCC
+
+GP26 -> TMP36 Vout GP16 -> DHT22 DATA
+
+GND -> TMP36 GND GND -> DHT22 GND
+
+Rezistor: 4,7–10 kΩ mezi 3V3 a DATA DHT22.
+
+5. Funkce jednotlivých senzorů
+
+TMP36:
+
+Měření teploty.
+Analogový výstup.
+Připojení přes ADC0 (GP26).
+
+DHT22:
+
+Měření teploty.
+Měření relativní vlhkosti.
+Digitální komunikace přes GP16.
+6. Komunikace systému
+
+TMP36 + DHT22 | v Raspberry Pi Pico W | | Bluetooth Low Energy (BLE) | v Raspberry Pi 4B | +---- Python | +---- SQLite databáze | +---- Grafický dashboard na HDMI monitoru
+
+7. Plánovaná funkčnost
+Měření každých 30 sekund.
+Bezdrátový přenos přes Bluetooth LE.
+Ukládání dat do SQLite.
+Zobrazení aktuální teploty.
+Zobrazení relativní vlhkosti.
+Graf teploty za posledních 24 hodin.
+Graf vlhkosti za posledních 24 hodin.
+Porovnávání hodnot TMP36 a DHT22.
+8. Bezpečnostní upozornění
+Používat napájení 3,3 V pro senzory.
+Nepřipojovat analogový výstup TMP36 na 5 V.
+Před zapnutím zkontrolovat zapojení.
+U DHT22 ověřit pořadí pinů podle konkrétního výrobce.
+Třetí pin DHT22 (NC) nezapojovat.
+
+KONEC DOKUMENTU
