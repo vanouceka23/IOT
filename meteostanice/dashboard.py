@@ -22,76 +22,117 @@ from database import create_database, save_measurement, DB_NAME
 
 
 DEVICE_NAME = "METEO_PICO"
+INDICATOR_DEVICE_NAME = "METEO_LED_PICO"
 
 CHAR_UUID = "12345678-1234-5678-1234-56789abcdef1"
+INDICATOR_CHAR_UUID = "12345678-1234-5678-1234-56789abcdea1"
 
 data_queue = queue.Queue()
 
 
 # Bluetooth prijimac
 async def bluetooth_receiver():
+    loop = asyncio.get_running_loop()
+    clients = {"sensor": None, "indicator": None}
+    connection_tasks = {"sensor": None, "indicator": None}
+    indicator_write_lock = asyncio.Lock()
+    latest_temperature = None
+
+    async def send_temperature(temperature):
+        client = clients["indicator"]
+
+        if client is None or not client.is_connected:
+            return
+
+        async with indicator_write_lock:
+            try:
+                await client.write_gatt_char(
+                    INDICATOR_CHAR_UUID,
+                    struct.pack("<h", round(temperature * 100)),
+                    response=True
+                )
+            except Exception as e:
+                print("Chyba odeslani teploty na LED Pico:", e)
+
+    def notification_handler(sender, data):
+        nonlocal latest_temperature
+
+        if len(data) != 6:
+            print("Neplatny datovy paket ze senzoroveho Pico.")
+            return
+
+        tmp, dht, humidity = struct.unpack("<hhh", data)
+
+        tmp = tmp / 100
+        dht = dht / 100
+        humidity = humidity / 100
+        latest_temperature = dht
+
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+        save_measurement(tmp, dht, humidity)
+        data_queue.put((timestamp, tmp, dht, humidity))
+        asyncio.run_coroutine_threadsafe(send_temperature(dht), loop)
+
+        print(
+            f"{timestamp} | "
+            f"{tmp:.2f} C | "
+            f"{dht:.2f} C | "
+            f"{humidity:.2f} %"
+        )
+
+    async def maintain_connection(role, device):
+        client = BleakClient(device)
+
+        try:
+            await client.connect()
+            clients[role] = client
+
+            if role == "sensor":
+                await client.start_notify(CHAR_UUID, notification_handler)
+                print("Senzorove Pico pripojeno:", device.address)
+            else:
+                print("LED Pico pripojeno:", device.address)
+                if latest_temperature is not None:
+                    await send_temperature(latest_temperature)
+
+            while client.is_connected:
+                await asyncio.sleep(1)
+        except Exception as e:
+            print(f"Bluetooth chyba ({role}):", e)
+        finally:
+            if clients[role] is client:
+                clients[role] = None
+            if client.is_connected:
+                try:
+                    await client.disconnect()
+                except Exception as e:
+                    print(f"Chyba odpojeni Bluetooth ({role}):", e)
 
     while True:
         try:
-            print("Hledam METEO_PICO...")
+            print("Hledam senzorove a LED Pico...")
+            devices = await BleakScanner.discover(timeout=5)
 
-            device = await BleakScanner.find_device_by_filter(
-                lambda d, ad:
-                    d.name == DEVICE_NAME or ad.local_name == DEVICE_NAME,
-                timeout=15
-            )
+            for device in devices:
+                role = {
+                    DEVICE_NAME: "sensor",
+                    INDICATOR_DEVICE_NAME: "indicator"
+                }.get(device.name)
 
-            if device is None:
-                print("Pico nenalezeno.")
-                await asyncio.sleep(5)
-                continue
+                if role is None:
+                    continue
 
-            print("Pico nalezeno:", device.address)
-
-            async with BleakClient(device) as client:
-
-                def notification_handler(sender, data):
-
-                    if len(data) != 6:
-                        return
-
-                    tmp, dht, humidity = struct.unpack("<hhh", data)
-
-                    tmp = tmp / 100
-                    dht = dht / 100
-                    humidity = humidity / 100
-
-                    timestamp = datetime.now().strftime(
-                        "%Y-%m-%d %H:%M:%S"
+                task = connection_tasks[role]
+                if task is None or task.done():
+                    connection_tasks[role] = asyncio.create_task(
+                        maintain_connection(role, device)
                     )
-
-                    save_measurement(tmp, dht, humidity)
-
-                    data_queue.put(
-                        (timestamp, tmp, dht, humidity)
-                    )
-
-                    print(
-                        f"{timestamp} | "
-                        f"{tmp:.2f} C | "
-                        f"{dht:.2f} C | "
-                        f"{humidity:.2f} %"
-                    )
-
-                await client.start_notify(
-                    CHAR_UUID,
-                    notification_handler
-                )
-
-                print("Bluetooth spojeni aktivni.")
-
-                while client.is_connected:
-                    await asyncio.sleep(1)
 
         except Exception as e:
             print("Bluetooth chyba:", e)
 
-        await asyncio.sleep(5)
+        await asyncio.sleep(1)
 
 
 def bluetooth_thread():

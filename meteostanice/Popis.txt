@@ -2,7 +2,8 @@ DOMÁCÍ METEOSTANICE
 Zapojení Raspberry Pi Pico W + TMP36 + DHT22
 1. Použité součástky
 Raspberry Pi 4B
-Raspberry Pi Pico W
+Raspberry Pi Pico W (senzory)
+Raspberry Pi Pico W (signalizace LED)
 Teplotní senzor TMP36
 Teplotní a vlhkostní senzor DHT22 (4 piny)
 Rezistor 4,7 kΩ až 10 kΩ
@@ -82,7 +83,10 @@ Měření relativní vlhkosti.
 Digitální komunikace přes GP16.
 6. Komunikace systému
 
-TMP36 + DHT22 | v Raspberry Pi Pico W | | Bluetooth Low Energy (BLE) | v Raspberry Pi 4B | +---- Python | +---- SQLite databáze | +---- Grafický dashboard na HDMI monitoru
+TMP36 + DHT22 | senzorove Pico W | BLE | Raspberry Pi 4B
+Raspberry Pi 4B | BLE | druhe Pico W s LED
+Obe Pico komunikuji pouze s Raspberry Pi 4B. Raspberry Pi uklada data
+do SQLite a zobrazuje je v grafickem dashboardu.
 
 7. Plánovaná funkčnost
 Měření každých 30 sekund.
@@ -99,5 +103,24 @@ Nepřipojovat analogový výstup TMP36 na 5 V.
 Před zapnutím zkontrolovat zapojení.
 U DHT22 ověřit pořadí pinů podle konkrétního výrobce.
 Třetí pin DHT22 (NC) nezapojovat.
+
+9. Druhe Pico W – signalizace vysoke teploty
+
+LED na druhem Pico W se ovlada jeho vestavenym LED vystupem.
+Nahrajte soubor led_pico.py do druheho Pico W.
+Senzorove Pico odesila namerena data pres BLE do Raspberry Pi 4B.
+Raspberry Pi 4B posila teplotu z DHT22 druhemu Pico pres BLE.
+Pica spolu primo nekomunikuji; obe navazuji Bluetooth spojeni pouze
+s Raspberry Pi 4B.
+
+Limit je ve vychozim nastaveni 30,0 C. Upravte konstantu
+TEMPERATURE_THRESHOLD v souboru led_pico.py podle pozadovane hodnoty.
+LED se rozsviti, kdyz teplota limit presahne; pri dosazeni limitu nebo
+poklesu pod nej zhasne. Pokud neprijde nova teplota 90 sekund, LED zhasne.
+Pri ztrate Bluetooth spojeni LED zhasne take.
+
+Na Raspberry Pi spustte dashboard.py. Raspberry Pi musi mit Bluetooth LE
+a nainstalovanou knihovnu bleak. Nahrajte main.py na senzorove Pico W
+a led_pico.py na druhe Pico W.
 
 KONEC DOKUMENTU
